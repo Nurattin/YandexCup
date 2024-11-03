@@ -241,11 +241,10 @@ fun DrawingApp() {
             ) {
                 val currentPage = pagerState.currentPage
                 UndoAction(
-                    enabled = paths[currentPage].isNotEmpty(),
+                    enabled = !paths.getOrNull(currentPage).isNullOrEmpty(),
                     onClick = {
                         val path = paths[currentPage]
                         if (path.isNotEmpty()) {
-
                             val lastItem = path.last()
                             val lastPath = lastItem.first
                             val lastPathProperty = lastItem.second
@@ -256,7 +255,7 @@ fun DrawingApp() {
                     },
                 )
                 RedoAction(
-                    enabled = pathsUndone[currentPage].isNotEmpty(),
+                    enabled = !pathsUndone.getOrNull(currentPage).isNullOrEmpty(),
                     onClick = {
                         val path = pathsUndone[currentPage]
                         if (path.isNotEmpty()) {
@@ -290,6 +289,20 @@ fun DrawingApp() {
                             onClick = {
                                 scope.launch {
                                     pagerState.scrollToPage(page)
+                                }
+                            },
+                            onCopyClick = { page ->
+                                paths.add(page + 1, paths[page].toMutableStateList())
+                                pathsUndone.add(page + 1, mutableStateListOf())
+                            },
+                            onDeleteClick = { page ->
+                                paths.removeAt(page)
+                                pathsUndone.removeAt(page)
+                            },
+                            onLongClick = {
+                                scope.launch {
+                                    pagerState.scrollToPage(page)
+                                    frameScrollState.animateScrollToItem(page)
                                 }
                             }
                         )
