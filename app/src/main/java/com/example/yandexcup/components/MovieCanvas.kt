@@ -1,7 +1,6 @@
 package com.example.yandexcup.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -58,7 +57,6 @@ fun MovieCanvas(
 
         val drawModifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
             .dragMotionEvent(
                 onDragStart = { pointerInputChange ->
                     motionEvent = MotionEvent.Down
@@ -163,6 +161,17 @@ fun MovieCanvas(
                                     join = property.strokeJoin
                                 )
                             )
+                        } else {
+                            drawPath(
+                                color = Color.Transparent,
+                                path = path,
+                                style = Stroke(
+                                    width = property.strokeWidth,
+                                    cap = property.strokeCap,
+                                    join = property.strokeJoin,
+                                ),
+                                blendMode = BlendMode.Clear,
+                            )
                         }
                     }
                 }
@@ -182,8 +191,6 @@ fun MovieCanvas(
                             )
                         )
                     } else {
-
-                        // Source
                         drawPath(
                             color = Color.Transparent,
                             path = path,
