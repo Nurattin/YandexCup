@@ -47,6 +47,7 @@ import com.example.yandexcup.components.PropertiesMenuDialog
 import com.example.yandexcup.core.ui.CornerRadii
 import com.example.yandexcup.core.ui.FrameGenerator
 import com.example.yandexcup.core.ui.PathProperties
+import com.example.yandexcup.core.ui.ShapeType
 import com.example.yandexcup.core.ui.SnapEdge
 import com.example.yandexcup.core.ui.SnapEdge.Companion.snapToNearestEdge
 import com.example.yandexcup.ui.theme.YandexCupTheme
@@ -244,7 +245,7 @@ fun DrawingApp() {
                 paths = frames,
                 pathsUndone = pathsUndone,
                 pagerState = pagerState,
-                currentPathProperty = currentPathProperty,
+                currentPathProperty = { currentPathProperty },
                 isAnimate = isAnimate,
                 onCurrentPathPropertyChange = { newPathProperty ->
                     currentPathProperty = newPathProperty
@@ -327,23 +328,27 @@ fun DrawingApp() {
                         shape = animatedShape,
                     )
                     .padding(4.dp),
-                toolMode = when (currentPathProperty.eraseMode) {
-                    true -> Erase
-                    false -> Pencil
+                toolMode = when {
+                    currentPathProperty.shapeMode != null -> Shape
+                    currentPathProperty.eraseMode -> Erase
+                    !currentPathProperty.eraseMode -> Pencil
                     else -> None
                 },
                 properties = currentPathProperty,
+                selectedShape = currentPathProperty.shapeMode,
                 onToolClick = { toolMode ->
                     when (toolMode) {
                         Erase -> {
                             currentPathProperty = currentPathProperty.copy(
-                                eraseMode = true
+                                eraseMode = true,
+                                shapeMode = null,
                             )
                         }
 
                         Pencil -> {
                             currentPathProperty = currentPathProperty.copy(
-                                eraseMode = false
+                                eraseMode = false,
+                                shapeMode = null,
                             )
                         }
 
@@ -353,6 +358,12 @@ fun DrawingApp() {
 
                         None -> Unit
                         ColorPicker -> Unit
+                        Shape -> {
+                            currentPathProperty = currentPathProperty.copy(
+                                shapeMode = ShapeType.None,
+                                eraseMode = false,
+                            )
+                        }
                     }
                 },
                 onColorPickerClick = {
@@ -360,6 +371,12 @@ fun DrawingApp() {
                 },
                 onPathPickerClick = {
                     pathPropertyDialogIsVisible = true
+                },
+                onShapePickerClick = { newShape ->
+                    currentPathProperty = currentPathProperty.copy(
+                        shapeMode = newShape,
+                        eraseMode = false,
+                    )
                 }
             )
         }
