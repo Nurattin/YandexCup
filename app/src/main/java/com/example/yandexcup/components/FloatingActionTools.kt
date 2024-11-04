@@ -72,6 +72,16 @@ fun FloatingActionTools(
                 onToolClick(ActionToolMode.Pencil)
             }
         )
+        ActionTool(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f),
+            selected = false,
+            icon = ImageVector.vectorResource(R.drawable.ic_baseline_auto_fix_high),
+            onClick = {
+                onToolClick(ActionToolMode.AutoGenerate)
+            },
+        )
         HorizontalDivider(
             color = Color.LightGray,
         )
@@ -213,5 +223,5 @@ private fun PreviewActionTool() {
 }
 
 enum class ActionToolMode {
-    Erase, Pencil, ColorPicker, None
+    Erase, Pencil, ColorPicker, AutoGenerate, None
 }
