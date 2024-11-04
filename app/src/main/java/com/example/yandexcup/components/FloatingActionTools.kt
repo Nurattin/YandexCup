@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.yandexcup.R
 import com.example.yandexcup.core.ui.PathProperties
+import com.example.yandexcup.core.ui.ShapeType
 import com.example.yandexcup.ui.theme.YandexCupTheme
 
 
@@ -41,9 +42,11 @@ fun FloatingActionTools(
     modifier: Modifier = Modifier,
     properties: PathProperties,
     toolMode: ActionToolMode,
+    selectedShape: ShapeType?,
     onToolClick: (ActionToolMode) -> Unit,
     onColorPickerClick: () -> Unit,
     onPathPickerClick: () -> Unit,
+    onShapePickerClick: (ShapeType) -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -72,6 +75,17 @@ fun FloatingActionTools(
                 onToolClick(ActionToolMode.Pencil)
             }
         )
+
+        ActionTool(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f),
+            selected = toolMode == ActionToolMode.Shape,
+            icon = ImageVector.vectorResource(R.drawable.ic_shape),
+            onClick = {
+                onToolClick(ActionToolMode.Shape)
+            },
+        )
         ActionTool(
             modifier = Modifier
                 .fillMaxWidth()
@@ -85,8 +99,9 @@ fun FloatingActionTools(
         HorizontalDivider(
             color = Color.LightGray,
         )
-        if (toolMode == ActionToolMode.Pencil) {
-
+        if (toolMode == ActionToolMode.Pencil
+            || toolMode == ActionToolMode.Shape
+        ) {
             ActionColorPicker(
                 modifier = Modifier
                     .fillMaxWidth(),
@@ -95,13 +110,33 @@ fun FloatingActionTools(
             )
         }
 
-        if (toolMode == ActionToolMode.Pencil || toolMode == ActionToolMode.Erase) {
+        if (toolMode == ActionToolMode.Pencil
+            || toolMode == ActionToolMode.Erase
+            || toolMode == ActionToolMode.Shape
+        ) {
             ActionPathSizePicker(
                 modifier = Modifier
                     .fillMaxWidth(),
                 onClick = onPathPickerClick,
                 strokeWidth = properties.strokeWidth,
             )
+        }
+
+        if (toolMode == ActionToolMode.Shape) {
+            ShapeType.entries.forEach {
+                if (it != ShapeType.None) {
+                    ShapePicker(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f),
+                        selected = selectedShape == it,
+                        onClick = {
+                            onShapePickerClick(it)
+                        },
+                        icon = ImageVector.vectorResource(it.iconRes)
+                    )
+                }
+            }
         }
     }
 }
@@ -114,7 +149,8 @@ private fun ActionTool(
     onClick: () -> Unit,
 ) {
     val color by animateColorAsState(
-        if (selected) Color.Red else Color.Transparent
+        if (selected) Color.Red else Color.Transparent,
+        label = "animationColor"
     )
     Box(
         modifier = modifier
@@ -139,7 +175,10 @@ private fun ActionColorPicker(
     color: Color,
     onClick: () -> Unit,
 ) {
-    val animatedColor by animateColorAsState(color)
+    val animatedColor by animateColorAsState(
+        targetValue = color,
+        label = "animationColor"
+    )
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(6.dp))
@@ -210,6 +249,34 @@ private fun ActionPathSizePicker(
     }
 }
 
+@Composable
+fun ShapePicker(
+    modifier: Modifier = Modifier,
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: ImageVector,
+) {
+    val color by animateColorAsState(
+        if (selected) Color.Red else Color.Transparent,
+        label = "animationColor"
+    )
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(color)
+            .clickable(
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White,
+        )
+    }
+}
+
 @Preview
 @Composable
 private fun PreviewActionTool() {
@@ -223,5 +290,10 @@ private fun PreviewActionTool() {
 }
 
 enum class ActionToolMode {
-    Erase, Pencil, ColorPicker, AutoGenerate, None
+    Erase,
+    Pencil,
+    ColorPicker,
+    Shape,
+    AutoGenerate,
+    None,
 }

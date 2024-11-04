@@ -10,5 +10,6 @@ data class PathProperties(
     val alpha: Float = 1f,
     val strokeCap: StrokeCap = StrokeCap.Round,
     val strokeJoin: StrokeJoin = StrokeJoin.Round,
-    val eraseMode: Boolean = false
+    val eraseMode: Boolean = false,
+    val shapeMode: ShapeType? = null,
 )
