@@ -10,6 +10,8 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -22,28 +24,36 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.yandexcup.components.ActionToolMode.*
 import com.example.yandexcup.components.AddNewFrame
+import com.example.yandexcup.components.ColorSelectionDialog
 import com.example.yandexcup.components.FloatingActionTools
 import com.example.yandexcup.components.FrameTab
 import com.example.yandexcup.components.MovieCanvas
+import com.example.yandexcup.components.PropertiesMenuDialog
 import com.example.yandexcup.components.RedoAction
 import com.example.yandexcup.components.UndoAction
 import com.example.yandexcup.coreUi.CornerRadii
@@ -95,6 +105,16 @@ fun DrawingApp() {
     val frameScrollState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
+    var parentSize by remember { mutableStateOf(IntSize.Zero) }
+
+    var toolsSize by remember { mutableStateOf(IntSize.Zero) }
+    var colorSelectedDialogIsVisible by remember { mutableStateOf(false) }
+    var pathPropertyDialogIsVisible by remember { mutableStateOf(false) }
+
+    val toolsOffsetX = remember { Animatable(0f) }
+    val toolsOffsetY = remember { Animatable(400f) }
+    var fps by remember { mutableStateOf(FPS.F60) }
+
     LaunchedEffect(isAnimate) {
         while (isAnimate) {
             val targetPage = (pagerState.currentPage + 1) % pagerState.pageCount
@@ -102,19 +122,109 @@ fun DrawingApp() {
             launch {
                 frameScrollState.animateScrollToItem(index = targetPage)
             }
-            delay(100)
+            delay((1000 / fps.count).toLong())
         }
     }
 
 
-    var parentSize by remember { mutableStateOf(IntSize.Zero) }
+    if (colorSelectedDialogIsVisible) {
+        ColorSelectionDialog(
+            onDismiss = {
+                colorSelectedDialogIsVisible = false
+            },
+            initialColor = currentPathProperty.color,
+            onNegativeClick = {
+                colorSelectedDialogIsVisible = false
+            },
+            onPositiveClick = { color ->
+                currentPathProperty = currentPathProperty.copy(
+                    color = color,
+                )
+                colorSelectedDialogIsVisible = false
+            }
+        )
+    }
 
-    var componentSize by remember { mutableStateOf(IntSize.Zero) }
-
-    val offsetX = remember { Animatable(0f) }
-    val offsetY = remember { Animatable(400f) }
+    if (pathPropertyDialogIsVisible) {
+        PropertiesMenuDialog(
+            pathOption = currentPathProperty,
+            onDismiss = {
+                pathPropertyDialogIsVisible = false
+            },
+            onPathOptionChange = {
+                currentPathProperty = it
+            }
+        )
+    }
 
     Column {
+        Row(
+            modifier = Modifier
+                .background(Color.Black)
+                .statusBarsPadding()
+                .fillMaxWidth()
+        ) {
+            Row {
+
+            }
+            Spacer(
+                modifier = Modifier
+                    .weight(1f)
+            )
+            Row(
+                modifier = Modifier
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .height(46.dp)
+                        .border(
+                            width = 1.dp,
+                            color = Color.White,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable(
+                            onClick = {
+                                fps = FPS.entries[(fps.ordinal + 1) % FPS.entries.size]
+                            }
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp),
+                        text = "FPS: ${fps.count}",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .size(46.dp)
+                        .border(
+                            width = 1.dp,
+                            color = Color.White,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable(
+                            onClick = {
+                                isAnimate = !isAnimate
+                            }
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(if (isAnimate) R.drawable.ic_round_pause else R.drawable.ic_baseline_play_arrow),
+                        contentDescription = null,
+                        tint = Color.White,
+                    )
+                }
+            }
+        }
         Box(
             modifier = Modifier
                 .onSizeChanged {
@@ -122,8 +232,13 @@ fun DrawingApp() {
                 }
                 .weight(1f)
         ) {
+
             MovieCanvas(
                 modifier = Modifier
+                    .paint(
+                        painter = painterResource(R.drawable.canvac),
+                        contentScale = ContentScale.FillBounds,
+                    )
                     .fillMaxSize(),
                 paths = paths,
                 pathsUndone = pathsUndone,
@@ -165,17 +280,20 @@ fun DrawingApp() {
             FloatingActionTools(
                 modifier = Modifier
                     .offset {
-                        IntOffset(offsetX.value.roundToInt(), offsetY.value.roundToInt())
+                        IntOffset(
+                            x = toolsOffsetX.value.roundToInt(),
+                            y = toolsOffsetY.value.roundToInt(),
+                        )
                     }
                     .pointerInput(Unit) {
                         detectDragGestures(
                             onDragEnd = {
                                 scope.launch {
                                     val edge = snapToNearestEdge(
-                                        offsetX = offsetX,
-                                        offsetY = offsetY,
+                                        offsetX = toolsOffsetX,
+                                        offsetY = toolsOffsetY,
                                         parentSize = parentSize,
-                                        componentSize = componentSize
+                                        componentSize = toolsSize
                                     )
                                     attachedEdge = edge
                                 }
@@ -183,8 +301,8 @@ fun DrawingApp() {
                             onDrag = { change, dragAmount ->
                                 change.consume()
                                 scope.launch {
-                                    offsetX.snapTo(offsetX.value + dragAmount.x)
-                                    offsetY.snapTo(offsetY.value + dragAmount.y)
+                                    toolsOffsetX.snapTo(toolsOffsetX.value + dragAmount.x)
+                                    toolsOffsetY.snapTo(toolsOffsetY.value + dragAmount.y)
                                 }
                             },
                             onDragStart = {
@@ -193,38 +311,44 @@ fun DrawingApp() {
                         )
                     }
                     .onSizeChanged { size ->
-                        componentSize = size
+                        toolsSize = size
                     }
                     .background(
                         color = Color.Black,
                         shape = animatedShape,
                     )
                     .padding(4.dp),
-                isEraseMode = currentPathProperty.eraseMode,
-                onEraseClick = {
-                    currentPathProperty = currentPathProperty.copy(
-                        eraseMode = !currentPathProperty.eraseMode
-                    )
+                toolMode = when (currentPathProperty.eraseMode) {
+                    true -> Erase
+                    false -> Pencil
+                    else -> None
+                },
+                properties = currentPathProperty,
+                onToolClick = { toolMode ->
+                    when (toolMode) {
+                        Erase -> {
+                            currentPathProperty = currentPathProperty.copy(
+                                eraseMode = true
+                            )
+                        }
+
+                        Pencil -> {
+                            currentPathProperty = currentPathProperty.copy(
+                                eraseMode = false
+                            )
+                        }
+
+                        None -> Unit
+                        ColorPicker -> Unit
+                    }
+                },
+                onColorPickerClick = {
+                    colorSelectedDialogIsVisible = true
+                },
+                onPathPickerClick = {
+                    pathPropertyDialogIsVisible = true
                 }
             )
-
-            IconButton(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp),
-                onClick = {
-                    isAnimate = !isAnimate
-                },
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(if (isAnimate) R.drawable.ic_round_pause else R.drawable.ic_baseline_play_arrow),
-                    contentDescription = null,
-                )
-            }
         }
         Row(
             modifier = Modifier
@@ -379,6 +503,10 @@ fun getCornerRadii(edge: SnapEdge?): CornerRadii {
             bottomEnd = 0.dp
         )
     }
+}
+
+enum class FPS(val count: Int) {
+    F5(5), F10(10), F15(15), F30(30), F60(60), F120(120),
 }
 
 

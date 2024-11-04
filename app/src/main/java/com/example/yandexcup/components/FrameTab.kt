@@ -111,7 +111,7 @@ fun FrameTab(
                             color = property.color,
                             path = path,
                             style = Stroke(
-                                width = property.strokeWidth * scaleW,
+                                width = property.strokeWidth,
                                 cap = property.strokeCap,
                                 join = property.strokeJoin
                             )
@@ -121,7 +121,7 @@ fun FrameTab(
                             color = Color.Transparent,
                             path = path,
                             style = Stroke(
-                                width = property.strokeWidth * scaleH,
+                                width = property.strokeWidth,
                                 cap = property.strokeCap,
                                 join = property.strokeJoin
                             ),
