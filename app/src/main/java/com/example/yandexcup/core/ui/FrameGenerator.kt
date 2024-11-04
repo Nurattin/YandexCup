@@ -1,4 +1,4 @@
-package com.example.yandexcup.coreUi
+package com.example.yandexcup.core.ui
 
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*

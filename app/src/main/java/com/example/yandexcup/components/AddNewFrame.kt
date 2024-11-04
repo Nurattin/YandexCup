@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.yandexcup.ui.theme.YandexCupTheme
 
-
 @Composable
 fun AddNewFrame(
     modifier: Modifier = Modifier,

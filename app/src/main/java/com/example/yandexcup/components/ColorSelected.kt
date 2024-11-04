@@ -24,17 +24,11 @@ fun ColorWheel(modifier: Modifier = Modifier) {
         Color.Cyan,
         Color.Green,
         Color.Yellow,
-        Color.Red
+        Color.Red,
     )
     Canvas(modifier = modifier) {
         val canvasWidth = size.width
         val canvasHeight = size.height
-
-        require(canvasWidth == canvasHeight,
-            lazyMessage = {
-                print("Canvas dimensions should be equal to each other")
-            }
-        )
         val cX = canvasWidth / 2
         val cY = canvasHeight / 2
         val canvasRadius = canvasWidth.coerceAtMost(canvasHeight) / 2f
@@ -60,11 +54,18 @@ fun ColorSlider(
     titleColor: Color,
     valueRange: ClosedFloatingPointRange<Float> = 0f..255f,
     rgb: Float,
-    onColorChanged: (Float) -> Unit
+    onColorChanged: (Float) -> Unit,
 ) {
-    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
 
-        Text(text = title.substring(0, 1), color = titleColor, fontWeight = FontWeight.Bold)
+        Text(
+            text = title.substring(0, 1),
+            color = titleColor,
+            fontWeight = FontWeight.Bold,
+        )
         Spacer(modifier = Modifier.width(8.dp))
         Slider(
             modifier = Modifier.weight(1f),

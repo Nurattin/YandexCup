@@ -22,72 +22,75 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.yandexcup.coreUi.PathProperties
+import com.example.yandexcup.core.ui.PathProperties
 
 @Composable
 fun PropertiesMenuDialog(
+    visible: Boolean,
     pathOption: PathProperties,
     onPathOptionChange: (PathProperties) -> Unit,
     onDismiss: () -> Unit,
 ) {
 
-    var strokeWidth by remember { mutableFloatStateOf(pathOption.strokeWidth) }
-    var strokeCap by remember { mutableStateOf(pathOption.strokeCap) }
-    var strokeJoin by remember { mutableStateOf(pathOption.strokeJoin) }
+    if (visible) {
+        var strokeWidth by remember { mutableFloatStateOf(pathOption.strokeWidth) }
+        var strokeCap by remember { mutableStateOf(pathOption.strokeCap) }
+        var strokeJoin by remember { mutableStateOf(pathOption.strokeJoin) }
 
-    Dialog(onDismissRequest = onDismiss) {
+        Dialog(onDismissRequest = onDismiss) {
 
-        Card(
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.padding(vertical = 8.dp)
-        ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Card(
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                Column(modifier = Modifier.padding(8.dp)) {
 
-                Text(
-                    text = "СВОЙСТВА",
-                    color = Color.Blue,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 12.dp, top = 12.dp)
-                )
+                    Text(
+                        text = "СВОЙСТВА",
+                        color = Color.Blue,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 12.dp, top = 12.dp)
+                    )
 
-                androidx.compose.foundation.Canvas(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp, vertical = 20.dp)
-                        .height(40.dp)
-                        .fillMaxWidth(),
+                    androidx.compose.foundation.Canvas(
+                        modifier = Modifier
+                            .padding(horizontal = 24.dp, vertical = 20.dp)
+                            .height(40.dp)
+                            .fillMaxWidth(),
 
-                    ) {
-                    val path = Path()
-                    path.moveTo(0f, size.height / 2)
-                    path.lineTo(size.width, size.height / 2)
+                        ) {
+                        val path = Path()
+                        path.moveTo(0f, size.height / 2)
+                        path.lineTo(size.width, size.height / 2)
 
-                    drawPath(
-                        color = pathOption.color,
-                        path = path,
-                        style = Stroke(
-                            width = strokeWidth,
-                            cap = strokeCap,
-                            join = strokeJoin
+                        drawPath(
+                            color = pathOption.color,
+                            path = path,
+                            style = Stroke(
+                                width = strokeWidth,
+                                cap = strokeCap,
+                                join = strokeJoin
+                            )
                         )
+                    }
+
+                    Text(
+                        text = "ТОЛЩИНА ${strokeWidth.toInt()}",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+
+                    Slider(
+                        value = strokeWidth,
+                        onValueChange = {
+                            strokeWidth = it
+                            onPathOptionChange(pathOption.copy(strokeWidth = strokeWidth))
+                        },
+                        valueRange = MIN_PATH_STROKE_WIDTH..MAX_PATH_STROKE_WIDTH,
+                        onValueChangeFinished = {}
                     )
                 }
-
-                Text(
-                    text = "ТОЛЩИНА ${strokeWidth.toInt()}",
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
-
-                Slider(
-                    value = strokeWidth,
-                    onValueChange = {
-                        strokeWidth = it
-                        onPathOptionChange(pathOption.copy(strokeWidth = strokeWidth))
-                    },
-                    valueRange = MIN_PATH_STROKE_WIDTH..MAX_PATH_STROKE_WIDTH,
-                    onValueChangeFinished = {}
-                )
             }
         }
     }

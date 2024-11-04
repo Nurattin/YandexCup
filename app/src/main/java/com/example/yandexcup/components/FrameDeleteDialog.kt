@@ -6,30 +6,33 @@ import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun FrameDeleteDialog(
+    visible: Boolean,
     onDeleteAllFrames: () -> Unit,
     onDeleteCurrentFrame: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = "Удаление кадров") },
-        text = { Text("Выберите действие:") },
-        confirmButton = {
-            TextButton(onClick = {
-                onDeleteAllFrames()
-                onDismiss()
-            }) {
-                Text("Удалить все кадры")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                onDeleteCurrentFrame()
-                onDismiss()
-            }) {
-                Text("Удалить этот кадр")
-            }
-        },
-        properties = DialogProperties(dismissOnClickOutside = true)
-    )
+    if (visible) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(text = "Удаление кадров") },
+            text = { Text("Выберите действие:") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteAllFrames()
+                    onDismiss()
+                }) {
+                    Text("Удалить все кадры")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    onDeleteCurrentFrame()
+                    onDismiss()
+                }) {
+                    Text("Удалить этот кадр")
+                }
+            },
+            properties = DialogProperties(dismissOnClickOutside = true)
+        )
+    }
 }
