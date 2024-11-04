@@ -17,13 +17,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.input.pointer.consumeDownChange
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.positionChange
-import com.example.yandexcup.coreUi.DrawMode
-import com.example.yandexcup.coreUi.MotionEvent
-import com.example.yandexcup.coreUi.PathProperties
-import com.example.yandexcup.coreUi.dragMotionEvent
+import com.example.yandexcup.core.ui.DrawMode
+import com.example.yandexcup.core.ui.MotionEvent
+import com.example.yandexcup.core.ui.PathProperties
+import com.example.yandexcup.core.ui.dragMotionEvent
 import kotlin.collections.forEach
 
 
@@ -61,7 +59,9 @@ fun MovieCanvas(
                 onDragStart = { pointerInputChange ->
                     motionEvent = MotionEvent.Down
                     currentPosition = pointerInputChange.position
-                    pointerInputChange.consumeDownChange()
+                    if (pointerInputChange.pressed != pointerInputChange.previousPressed) {
+                        pointerInputChange.consume()
+                    }
 
                 },
                 onDrag = { pointerInputChange ->
@@ -76,12 +76,16 @@ fun MovieCanvas(
                         }
                         currentPath.translate(change)
                     }
-                    pointerInputChange.consumePositionChange()
+                    if (pointerInputChange.pressed != pointerInputChange.previousPressed) {
+                        pointerInputChange.consume()
+                    }
 
                 },
                 onDragEnd = { pointerInputChange ->
                     motionEvent = MotionEvent.Up
-                    pointerInputChange.consumeDownChange()
+                    if (pointerInputChange.pressed != pointerInputChange.previousPressed) {
+                        pointerInputChange.consume()
+                    }
                 }
             )
 

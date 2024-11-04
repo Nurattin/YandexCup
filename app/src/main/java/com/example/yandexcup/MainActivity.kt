@@ -10,59 +10,45 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.yandexcup.FPS.Companion.frameDelay
 import com.example.yandexcup.components.ActionToolMode.*
-import com.example.yandexcup.components.AddNewFrame
 import com.example.yandexcup.components.ColorSelectionDialog
 import com.example.yandexcup.components.FloatingActionTools
 import com.example.yandexcup.components.FrameDeleteDialog
 import com.example.yandexcup.components.FrameGenerateDialog
-import com.example.yandexcup.components.FrameTab
+import com.example.yandexcup.components.MovieBottomBar
 import com.example.yandexcup.components.MovieCanvas
+import com.example.yandexcup.components.MovieTopBar
 import com.example.yandexcup.components.PropertiesMenuDialog
-import com.example.yandexcup.components.RedoAction
-import com.example.yandexcup.components.UndoAction
-import com.example.yandexcup.coreUi.CornerRadii
-import com.example.yandexcup.coreUi.FrameGenerator
-import com.example.yandexcup.coreUi.PathProperties
-import com.example.yandexcup.coreUi.SnapEdge
-import com.example.yandexcup.coreUi.snapToNearestEdge
+import com.example.yandexcup.core.ui.CornerRadii
+import com.example.yandexcup.core.ui.FrameGenerator
+import com.example.yandexcup.core.ui.PathProperties
+import com.example.yandexcup.core.ui.SnapEdge
+import com.example.yandexcup.core.ui.SnapEdge.Companion.snapToNearestEdge
 import com.example.yandexcup.ui.theme.YandexCupTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -76,9 +62,11 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             YandexCupTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { _ ->
-                    DrawingApp(
-                    )
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                ) {
+                    DrawingApp()
                 }
             }
         }
@@ -88,45 +76,63 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DrawingApp() {
-    val paths = remember {
+
+    val density = LocalDensity.current
+
+    val frameScrollState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    val frames = remember {
         mutableStateListOf(mutableStateListOf<Pair<Path, PathProperties>>())
     }
-
+    var currentPathProperty by remember {
+        mutableStateOf(PathProperties())
+    }
     val pathsUndone = remember {
         mutableStateListOf(mutableStateListOf<Pair<Path, PathProperties>>())
     }
 
-
-    var currentPathProperty by remember { mutableStateOf(PathProperties()) }
-    val pagerState = rememberPagerState {
-        paths.size
-    }
+    val pagerState = rememberPagerState(
+        pageCount = frames::size
+    )
 
     var isAnimate by remember {
         mutableStateOf(false)
     }
 
-    val frameScrollState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
+    var canvasSize by remember {
+        mutableStateOf(IntSize.Zero)
+    }
 
-    var parentSize by remember { mutableStateOf(IntSize.Zero) }
-
-    val frameGenerator = remember(parentSize) {
+    val frameGenerator = remember(canvasSize) {
         FrameGenerator(
-            canvasWidth = parentSize.width.toFloat(),
-            canvasHeight = parentSize.height.toFloat(),
+            canvasWidth = canvasSize.width.toFloat(),
+            canvasHeight = canvasSize.height.toFloat(),
         )
     }
 
-    var toolsSize by remember { mutableStateOf(IntSize.Zero) }
-    var colorSelectedDialogIsVisible by remember { mutableStateOf(false) }
-    var pathPropertyDialogIsVisible by remember { mutableStateOf(false) }
-
+    var toolsSize by remember {
+        mutableStateOf(IntSize.Zero)
+    }
     val toolsOffsetX = remember { Animatable(0f) }
     val toolsOffsetY = remember { Animatable(400f) }
-    var fps by remember { mutableStateOf(FPS.F60) }
-    var showRemoveFrameDialog by remember { mutableStateOf(false) }
-    var showAutoGenerateDialog by remember { mutableStateOf(false) }
+
+    var colorSelectedDialogIsVisible by remember {
+        mutableStateOf(false)
+    }
+    var pathPropertyDialogIsVisible by remember {
+        mutableStateOf(false)
+    }
+    var removeFrameDialogIsVisible by remember {
+        mutableStateOf(false)
+    }
+    var autoGenerateDialogIsVisible by remember {
+        mutableStateOf(false)
+    }
+
+    var fps by remember {
+        mutableStateOf(FPS.F10)
+    }
 
     LaunchedEffect(isAnimate) {
         while (isAnimate) {
@@ -135,176 +141,99 @@ fun DrawingApp() {
             launch {
                 frameScrollState.animateScrollToItem(index = targetPage)
             }
-            delay((1000 / fps.count).toLong())
+            delay(fps.frameDelay())
         }
     }
 
-    if (showRemoveFrameDialog) {
-        FrameDeleteDialog(
-            onDismiss = {
-                showRemoveFrameDialog = false
-            },
-            onDeleteAllFrames = {
-                paths.clear()
-                pathsUndone.clear()
-                showRemoveFrameDialog = false
-            },
-            onDeleteCurrentFrame = {
-                paths.removeAt(pagerState.currentPage)
-                pathsUndone.removeAt(pagerState.currentPage)
-                showRemoveFrameDialog = false
-            }
-        )
-    }
+    FrameDeleteDialog(
+        visible = removeFrameDialogIsVisible,
+        onDismiss = {
+            removeFrameDialogIsVisible = false
+        },
+        onDeleteAllFrames = {
+            frames.clear()
+            pathsUndone.clear()
+            removeFrameDialogIsVisible = false
+        },
+        onDeleteCurrentFrame = {
+            frames.removeAt(pagerState.currentPage)
+            pathsUndone.removeAt(pagerState.currentPage)
+            removeFrameDialogIsVisible = false
+        }
+    )
 
-    if (showAutoGenerateDialog) {
-        FrameGenerateDialog(
-            onDismiss = {
-                showAutoGenerateDialog = false
-            },
-            onGenerateFrames = { count ->
-                val newFrame = frameGenerator.generateFrames(count)
-                    .map(List<Pair<Path, PathProperties>>::toMutableStateList)
-                    .toMutableStateList()
-                paths.addAll(
-                    index = pagerState.currentPage,
-                    elements = newFrame,
-                )
-                pathsUndone.addAll(
-                    index = pagerState.currentPage,
-                    elements = List(newFrame.size) { mutableStateListOf() },
-                )
-                showAutoGenerateDialog = false
-            }
-        )
-    }
+    FrameGenerateDialog(
+        visible = autoGenerateDialogIsVisible,
+        onDismiss = {
+            autoGenerateDialogIsVisible = false
+        },
+        onGenerateFrames = { count ->
+            val newFrame = frameGenerator.generateFrames(count)
+                .map(List<Pair<Path, PathProperties>>::toMutableStateList)
+                .toMutableStateList()
+            frames.addAll(
+                index = pagerState.currentPage,
+                elements = newFrame,
+            )
+            pathsUndone.addAll(
+                index = pagerState.currentPage,
+                elements = List(newFrame.size) { mutableStateListOf() },
+            )
+            autoGenerateDialogIsVisible = false
+        }
+    )
 
 
-    if (colorSelectedDialogIsVisible) {
-        ColorSelectionDialog(
-            onDismiss = {
-                colorSelectedDialogIsVisible = false
-            },
-            initialColor = currentPathProperty.color,
-            onNegativeClick = {
-                colorSelectedDialogIsVisible = false
-            },
-            onPositiveClick = { color ->
-                currentPathProperty = currentPathProperty.copy(
-                    color = color,
-                )
-                colorSelectedDialogIsVisible = false
-            }
-        )
-    }
+    ColorSelectionDialog(
+        visible = colorSelectedDialogIsVisible,
+        onDismiss = {
+            colorSelectedDialogIsVisible = false
+        },
+        initialColor = currentPathProperty.color,
+        onNegativeClick = {
+            colorSelectedDialogIsVisible = false
+        },
+        onPositiveClick = { color ->
+            currentPathProperty = currentPathProperty.copy(
+                color = color,
+            )
+            colorSelectedDialogIsVisible = false
+        }
+    )
 
-    if (pathPropertyDialogIsVisible) {
-        PropertiesMenuDialog(
-            pathOption = currentPathProperty,
-            onDismiss = {
-                pathPropertyDialogIsVisible = false
-            },
-            onPathOptionChange = {
-                currentPathProperty = it
-            }
-        )
-    }
+    PropertiesMenuDialog(
+        visible = pathPropertyDialogIsVisible,
+        pathOption = currentPathProperty,
+        onDismiss = {
+            pathPropertyDialogIsVisible = false
+        },
+        onPathOptionChange = {
+            currentPathProperty = it
+        }
+    )
 
     Column {
-        Row(
-            modifier = Modifier
-                .background(Color.Black)
-                .statusBarsPadding()
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .size(46.dp)
-                    .border(
-                        width = 1.dp,
-                        color = Color.White,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .clickable(
-                        onClick = {
-                            showRemoveFrameDialog = true
-                        }
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.ic_clear),
-                    contentDescription = null,
-                    tint = Color.White,
-                )
+        MovieTopBar(
+            modifier = Modifier,
+            fps = fps,
+            isAnimate = isAnimate,
+            onChangeFpsClick = {
+                fps = FPS.entries[(fps.ordinal + 1) % FPS.entries.size]
+            },
+            onRemoveFrameClick = {
+                removeFrameDialogIsVisible = true
+            },
+            onPlayClick = {
+                isAnimate = !isAnimate
             }
-            Spacer(
-                modifier = Modifier
-                    .weight(1f)
-            )
-            Row(
-                modifier = Modifier,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .height(46.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color.White,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .clickable(
-                            onClick = {
-                                fps = FPS.entries[(fps.ordinal + 1) % FPS.entries.size]
-                            }
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp),
-                        text = "FPS: ${fps.count}",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .size(46.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color.White,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .clickable(
-                            onClick = {
-                                isAnimate = !isAnimate
-                            }
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = ImageVector.vectorResource(if (isAnimate) R.drawable.ic_round_pause else R.drawable.ic_baseline_play_arrow),
-                        contentDescription = null,
-                        tint = Color.White,
-                    )
-                }
-            }
-        }
+        )
         Box(
             modifier = Modifier
                 .onSizeChanged {
-                    parentSize = it
+                    canvasSize = it
                 }
                 .weight(1f)
         ) {
-
             MovieCanvas(
                 modifier = Modifier
                     .paint(
@@ -312,7 +241,7 @@ fun DrawingApp() {
                         contentScale = ContentScale.FillBounds,
                     )
                     .fillMaxSize(),
-                paths = paths,
+                paths = frames,
                 pathsUndone = pathsUndone,
                 pagerState = pagerState,
                 currentPathProperty = currentPathProperty,
@@ -321,25 +250,33 @@ fun DrawingApp() {
                     currentPathProperty = newPathProperty
                 },
             )
-            var attachedEdge by remember { mutableStateOf<SnapEdge?>(SnapEdge.LEFT) }
+            var toolsAttachedEdge by remember {
+                mutableStateOf<SnapEdge>(SnapEdge.LEFT)
+            }
 
-            val targetRadii = getCornerRadii(attachedEdge)
+            val targetRadii = getCornerRadii(
+                edge = toolsAttachedEdge,
+            )
 
             val topStartRadius by animateDpAsState(
                 targetValue = targetRadii.topStart,
-                animationSpec = tween(durationMillis = 300)
+                animationSpec = tween(durationMillis = 300),
+                label = "topStartRadius",
             )
             val topEndRadius by animateDpAsState(
                 targetValue = targetRadii.topEnd,
-                animationSpec = tween(durationMillis = 300)
+                animationSpec = tween(durationMillis = 300),
+                label = "topEndRadius",
             )
             val bottomStartRadius by animateDpAsState(
                 targetValue = targetRadii.bottomStart,
-                animationSpec = tween(durationMillis = 300)
+                animationSpec = tween(durationMillis = 300),
+                label = "bottomStartRadius",
             )
             val bottomEndRadius by animateDpAsState(
                 targetValue = targetRadii.bottomEnd,
-                animationSpec = tween(durationMillis = 300)
+                animationSpec = tween(durationMillis = 300),
+                label = "bottomEndRadius",
             )
 
             val animatedShape = RoundedCornerShape(
@@ -364,10 +301,10 @@ fun DrawingApp() {
                                     val edge = snapToNearestEdge(
                                         offsetX = toolsOffsetX,
                                         offsetY = toolsOffsetY,
-                                        parentSize = parentSize,
-                                        componentSize = toolsSize
+                                        parentSize = canvasSize,
+                                        componentSize = toolsSize,
                                     )
-                                    attachedEdge = edge
+                                    toolsAttachedEdge = edge
                                 }
                             },
                             onDrag = { change, dragAmount ->
@@ -378,7 +315,7 @@ fun DrawingApp() {
                                 }
                             },
                             onDragStart = {
-                                attachedEdge = SnapEdge.NONE
+                                toolsAttachedEdge = SnapEdge.NONE
                             }
                         )
                     }
@@ -411,7 +348,7 @@ fun DrawingApp() {
                         }
 
                         AutoGenerate -> {
-                            showAutoGenerateDialog = true
+                            autoGenerateDialogIsVisible = true
                         }
 
                         None -> Unit
@@ -426,118 +363,70 @@ fun DrawingApp() {
                 }
             )
         }
-        Row(
-            modifier = Modifier
-                .background(Color.Black)
-                .navigationBarsPadding()
-                .padding(10.dp),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            val scrollState = rememberScrollState()
-            val density = LocalDensity.current
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val currentPage = pagerState.currentPage
-                UndoAction(
-                    enabled = !paths.getOrNull(currentPage).isNullOrEmpty(),
-                    onClick = {
-                        val path = paths[currentPage]
-                        if (path.isNotEmpty()) {
-                            val lastItem = path.last()
-                            val lastPath = lastItem.first
-                            val lastPathProperty = lastItem.second
-                            path.remove(lastItem)
+        val currentPage = pagerState.currentPage
+        MovieBottomBar(
+            undoEnabled = !frames.getOrNull(currentPage).isNullOrEmpty(),
+            redoEnabled = !pathsUndone.getOrNull(currentPage).isNullOrEmpty(),
+            pagerState = pagerState,
+            frameScrollState = frameScrollState,
+            frames = frames,
+            onUndoClick = {
+                val path = frames[currentPage]
+                if (path.isNotEmpty()) {
+                    val lastItem = path.last()
+                    val lastPath = lastItem.first
+                    val lastPathProperty = lastItem.second
+                    path.remove(lastItem)
 
-                            pathsUndone[currentPage].add(Pair(lastPath, lastPathProperty))
-                        }
-                    },
-                )
-                RedoAction(
-                    enabled = !pathsUndone.getOrNull(currentPage).isNullOrEmpty(),
-                    onClick = {
-                        val path = pathsUndone[currentPage]
-                        if (path.isNotEmpty()) {
-
-                            val lastPath = path.last().first
-                            val lastPathProperty = path.last().second
-                            path.removeAt(path.lastIndex)
-                            paths[currentPage].add(Pair(lastPath, lastPathProperty))
-                        }
-                    },
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .weight(1f),
-            ) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    contentPadding = PaddingValues(
-                        horizontal = 4.dp,
-                    ),
-                    state = frameScrollState,
-                ) {
-                    items(pagerState.pageCount) { page ->
-                        val selected = page == pagerState.currentPage
-                        FrameTab(
-                            modifier = Modifier,
-                            selected = selected,
-                            number = page,
-                            path = paths[page],
-                            onClick = {
-                                scope.launch {
-                                    pagerState.scrollToPage(page)
-                                }
-                            },
-                            onCopyClick = { page ->
-                                paths.add(page + 1, paths[page].toMutableStateList())
-                                pathsUndone.add(page + 1, mutableStateListOf())
-                            },
-                            onDeleteClick = { page ->
-                                paths.removeAt(page)
-                                pathsUndone.removeAt(page)
-                            },
-                            onLongClick = {
-                                scope.launch {
-                                    pagerState.scrollToPage(page)
-                                    frameScrollState.animateScrollToItem(page)
-                                }
-                            }
-                        )
-                    }
-                    item {
-                        AddNewFrame(
-                            modifier = Modifier
-                        ) {
-                            scope.launch {
-                                if (paths.isEmpty()) {
-                                    paths.add(mutableStateListOf())
-                                    pathsUndone.add(mutableStateListOf())
-                                } else {
-                                    paths.add(pagerState.currentPage + 1, mutableStateListOf())
-                                    pathsUndone.add(
-                                        pagerState.currentPage + 1,
-                                        mutableStateListOf()
-                                    )
-                                }
-                                pagerState.scrollToPage(pagerState.currentPage + 1)
-                                scrollState.animateScrollBy(with(density) { (scrollState.value.dp + 160.dp + 4.dp).toPx() })
-                            }
-                        }
-                    }
+                    pathsUndone[currentPage].add(Pair(lastPath, lastPathProperty))
                 }
-                Box(
-                    modifier = Modifier
-                        .width(50.dp)
-                        .align(Alignment.BottomStart)
-                        .background(
-                            brush = Brush.horizontalGradient(listOf(Color.Black, Color.Transparent))
+            },
+            onRedoClick = {
+                val path = pathsUndone[currentPage]
+                if (path.isNotEmpty()) {
+
+                    val lastPath = path.last().first
+                    val lastPathProperty = path.last().second
+                    path.removeAt(path.lastIndex)
+                    frames[currentPage].add(Pair(lastPath, lastPathProperty))
+                }
+            },
+            onAddNewFrame = {
+                scope.launch {
+                    if (frames.isEmpty()) {
+                        frames.add(mutableStateListOf())
+                        pathsUndone.add(mutableStateListOf())
+                    } else {
+                        frames.add(pagerState.currentPage + 1, mutableStateListOf())
+                        pathsUndone.add(
+                            pagerState.currentPage + 1,
+                            mutableStateListOf()
                         )
-                )
+                    }
+                    pagerState.scrollToPage(pagerState.currentPage + 1)
+                    frameScrollState.animateScrollBy(with(density) { (160.dp + 4.dp).toPx() })
+                }
+            },
+            onCopyClick = { page ->
+                frames.add(page + 1, frames[page].toMutableStateList())
+                pathsUndone.add(page + 1, mutableStateListOf())
+            },
+            onDeleteClick = { page ->
+                frames.removeAt(page)
+                pathsUndone.removeAt(page)
+            },
+            onFrameClick = { page ->
+                scope.launch {
+                    pagerState.scrollToPage(page)
+                }
+            },
+            onFrameLongClick = { page ->
+                scope.launch {
+                    pagerState.scrollToPage(page)
+                    frameScrollState.animateScrollToItem(page)
+                }
             }
-        }
+        )
     }
 }
 
@@ -590,7 +479,18 @@ fun getCornerRadii(edge: SnapEdge?): CornerRadii {
 }
 
 enum class FPS(val count: Int) {
-    F5(5), F10(10), F15(15), F30(30), F60(60), F120(120),
+    F5(5),
+    F10(10),
+    F15(15),
+    F30(30),
+    F60(60),
+    F120(120);
+
+    companion object {
+        fun FPS.frameDelay(): Long {
+            return (1000 / count).toLong()
+        }
+    }
 }
 
 

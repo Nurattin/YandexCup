@@ -32,7 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.yandexcup.R
-import com.example.yandexcup.coreUi.PathProperties
+import com.example.yandexcup.core.ui.PathProperties
 import com.example.yandexcup.ui.theme.YandexCupTheme
 
 

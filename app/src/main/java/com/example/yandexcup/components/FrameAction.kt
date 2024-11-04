@@ -27,7 +27,6 @@ import androidx.compose.ui.window.Popup
 import com.example.yandexcup.R
 import com.example.yandexcup.ui.theme.YandexCupTheme
 
-
 @Composable
 fun FrameAction(
     show: Boolean,
