@@ -1,5 +1,8 @@
 package com.example.yandexcup.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,6 +35,7 @@ import com.example.yandexcup.R
 fun MovieTopBar(
     modifier: Modifier = Modifier,
     fps: FPS,
+    frameCount: Int,
     isAnimate: Boolean,
     onRemoveFrameClick: () -> Unit,
     onChangeFpsClick: () -> Unit,
@@ -44,25 +48,32 @@ fun MovieTopBar(
             .padding(16.dp)
             .fillMaxWidth()
     ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .size(46.dp)
-                .border(
-                    width = 1.dp,
-                    color = Color.White,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .clickable(
-                    onClick = onRemoveFrameClick,
-                ),
-            contentAlignment = Alignment.Center,
+        AnimatedVisibility(
+            visible = !isAnimate && frameCount >= 1,
+            modifier = Modifier,
+            enter = fadeIn(),
+            exit = fadeOut(),
         ) {
-            Icon(
-                imageVector = ImageVector.vectorResource(R.drawable.ic_clear),
-                contentDescription = null,
-                tint = Color.White,
-            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .size(46.dp)
+                    .border(
+                        width = 1.dp,
+                        color = Color.White,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .clickable(
+                        onClick = onRemoveFrameClick,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.ic_clear),
+                    contentDescription = null,
+                    tint = Color.White,
+                )
+            }
         }
         Spacer(
             modifier = Modifier
